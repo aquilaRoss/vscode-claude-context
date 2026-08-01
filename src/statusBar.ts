@@ -31,13 +31,7 @@ export class StatusBarController implements vscode.Disposable {
       }),
       vscode.workspace.onDidChangeConfiguration((event) => {
         if (event.affectsConfiguration('claudeContext')) {
-          if (
-            event.affectsConfiguration('claudeContext.statusBar.alignment') ||
-            event.affectsConfiguration('claudeContext.statusBar.priority')
-          ) {
-            this.applyPlacementIfChanged();
-          }
-
+          this.applyPlacementIfChanged();
           this.render();
 
           if (event.affectsConfiguration('claudeContext.showHistoricalUsage')) {
@@ -53,7 +47,8 @@ export class StatusBarController implements vscode.Disposable {
   private readPlacement(): { alignment: vscode.StatusBarAlignment; priority: number } {
     const config = vscode.workspace.getConfiguration('claudeContext');
     const alignment = config.get<string>('statusBar.alignment', 'left');
-    const priority = config.get<number>('statusBar.priority', 100);
+    const rawPriority = config.get<number>('statusBar.priority', 100);
+    const priority = Number.isFinite(rawPriority) ? rawPriority : 100;
 
     return {
       alignment: alignment === 'right' ? vscode.StatusBarAlignment.Right : vscode.StatusBarAlignment.Left,
@@ -69,6 +64,10 @@ export class StatusBarController implements vscode.Disposable {
   }
 
   private applyPlacementIfChanged(): void {
+    if (this.disposed) {
+      return;
+    }
+
     const placement = this.readPlacement();
 
     if (placement.alignment === this.itemAlignment && placement.priority === this.itemPriority) {
