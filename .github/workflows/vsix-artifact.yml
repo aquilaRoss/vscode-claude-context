@@ -1,0 +1,37 @@
+name: VSIX Artifact
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - feat/statusbar-alignment-setting
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - name: Package extension
+        run: npx vsce package
+      - name: Set short SHA
+        id: vars
+        shell: bash
+        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> "$GITHUB_OUTPUT"
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-claude-context-${{ matrix.os }}-${{ steps.vars.outputs.SHORT_SHA }}
+          retention-days: 7
+          path: |
+            *.vsix
