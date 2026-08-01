@@ -192,7 +192,9 @@ const workspace = {
       affectsConfiguration: (section) =>
         changedSections.some(
           (changedSection) =>
-            changedSection === section || changedSection.startsWith(`${section}.`)
+            changedSection === section ||
+            changedSection.startsWith(`${section}.`) ||
+            section.startsWith(`${changedSection}.`)
         )
     });
   }
