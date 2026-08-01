@@ -50,8 +50,8 @@ export class StatusBarController implements vscode.Disposable {
     const priority = Number.isFinite(rawPriority) ? Math.min(Math.max(rawPriority, 0), 1000) : 100;
 
     if (alignment !== 'left' && alignment !== 'right') {
-      console.warn(
-        `Claude Context: invalid claudeContext.statusBar.alignment value "${alignment}", falling back to "left"`
+      globalThis.console.warn(
+        `[vscode-claude-context] invalid claudeContext.statusBar.alignment value "${alignment}", falling back to "left"`
       );
       return { alignment: vscode.StatusBarAlignment.Left, priority };
     }
