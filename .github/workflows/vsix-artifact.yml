@@ -2,9 +2,6 @@ name: VSIX Artifact
 
 on:
   workflow_dispatch: {}
-  push:
-    branches:
-      - feat/statusbar-alignment-setting
 
 jobs:
   package:
