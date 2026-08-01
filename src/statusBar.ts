@@ -6,8 +6,6 @@ import { buildTooltipText } from './statusBarFormatting';
 
 export class StatusBarController implements vscode.Disposable {
   private item: vscode.StatusBarItem;
-  private itemAlignment: vscode.StatusBarAlignment;
-  private itemPriority: number;
   private readonly subscriptions: vscode.Disposable[] = [];
   private readonly rateLimit: RateLimitReader;
   private disposed = false;
@@ -20,8 +18,6 @@ export class StatusBarController implements vscode.Disposable {
   public constructor(source: ContextDataSource, rateLimit: RateLimitReader) {
     this.rateLimit = rateLimit;
     const placement = this.readPlacement();
-    this.itemAlignment = placement.alignment;
-    this.itemPriority = placement.priority;
     this.item = this.createItem(placement.alignment, placement.priority);
 
     this.subscriptions.push(
@@ -31,7 +27,10 @@ export class StatusBarController implements vscode.Disposable {
       }),
       vscode.workspace.onDidChangeConfiguration((event) => {
         if (event.affectsConfiguration('claudeContext')) {
-          this.applyPlacementIfChanged();
+          if (event.affectsConfiguration('claudeContext.statusBar')) {
+            this.applyPlacementIfChanged();
+          }
+
           this.render();
 
           if (event.affectsConfiguration('claudeContext.showHistoricalUsage')) {
@@ -48,7 +47,11 @@ export class StatusBarController implements vscode.Disposable {
     const config = vscode.workspace.getConfiguration('claudeContext');
     const alignment = config.get<string>('statusBar.alignment', 'left');
     const rawPriority = config.get<number>('statusBar.priority', 100);
-    const priority = Number.isFinite(rawPriority) ? rawPriority : 100;
+    const priority = Number.isFinite(rawPriority) ? Math.min(Math.max(rawPriority, 0), 1000) : 100;
+
+    if (alignment !== 'left' && alignment !== 'right') {
+      return { alignment: vscode.StatusBarAlignment.Left, priority };
+    }
 
     return {
       alignment: alignment === 'right' ? vscode.StatusBarAlignment.Right : vscode.StatusBarAlignment.Left,
@@ -70,12 +73,9 @@ export class StatusBarController implements vscode.Disposable {
 
     const placement = this.readPlacement();
 
-    if (placement.alignment === this.itemAlignment && placement.priority === this.itemPriority) {
+    if (placement.alignment === this.item.alignment && placement.priority === this.item.priority) {
       return;
     }
-
-    this.itemAlignment = placement.alignment;
-    this.itemPriority = placement.priority;
 
     this.item.dispose();
     this.item = this.createItem(placement.alignment, placement.priority);
